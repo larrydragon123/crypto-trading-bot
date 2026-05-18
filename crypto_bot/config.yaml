@@ -3,6 +3,9 @@ mode: paper  # paper | live
 exchange:
   name: okx
   testnet: true  # true for paper mode testnet
+  api_key: ""
+  secret: ""
+  password: ""
 
 trading:
   symbols:
