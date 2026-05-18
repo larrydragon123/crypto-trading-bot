@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "trading.db"
+DB_PATH = Path("/app/data/trading.db")
 
 def get_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(str(DB_PATH))
