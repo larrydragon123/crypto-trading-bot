@@ -7,4 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN mkdir -p /app/logs
+
 CMD ["python", "-m", "crypto_bot.main"]

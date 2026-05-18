@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: crypto-bot
+    restart: always
+    environment:
+      - OKX_API_KEY=${OKX_API_KEY}
+      - OKX_SECRET=${OKX_SECRET}
+      - OKX_PASSWORD=${OKX_PASSWORD}
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
+      - TG_CHAT_ID=${TG_CHAT_ID}
+      - PAPER_TRADING_ONLY=${PAPER_TRADING_ONLY:-true}
+    volumes:
+      - ./trading.db:/app/trading.db
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
