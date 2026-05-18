@@ -2,14 +2,13 @@ import asyncio
 import logging
 import signal
 import sys
-from datetime import datetime, timezone
 
 import ccxt
 
 from crypto_bot.config import get_config
 from crypto_bot.data.storage import (
     init_db, open_trade, close_trade, get_open_trades, record_balance,
-    update_daily_stats
+    update_daily_stats,
 )
 from crypto_bot.data.feed import fetch_with_retry
 from crypto_bot.strategy.indicators import compute_indicators
@@ -61,7 +60,6 @@ async def main():
             exchange.set_sandbox_mode(True)
         exchange.load_markets()
         broker.set_exchange(exchange)
-        broker._exchange = exchange
         logger.info("Using PAPER broker — simulated trading")
 
     tg = TelegramNotifier(cfg)
@@ -76,6 +74,7 @@ async def main():
     while not SHUTDOWN:
         try:
             await run_loop(broker, tg, symbols, tf_main, tf_trend, cfg)
+            update_daily_stats(starting_balance)
         except Exception as e:
             logger.error(f"Loop error: {e}", exc_info=True)
             await tg.notify_error(str(e))
