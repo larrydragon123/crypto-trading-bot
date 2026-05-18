@@ -14,14 +14,16 @@ def compute_indicators(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     vol = df["volume"]
 
     bb = ta.bbands(close, length=strat["bb_period"], std=strat["bb_std"])
-    df["bb_lower"] = bb[f"BBL_{strat['bb_period']}_{strat['bb_std']}"]
-    df["bb_mid"] = bb[f"BBM_{strat['bb_period']}_{strat['bb_std']}"]
-    df["bb_upper"] = bb[f"BBU_{strat['bb_period']}_{strat['bb_std']}"]
+    # Extract BB columns by prefix to avoid float/int mismatch in column names
+    bb_cols = {c.split("_")[0]: c for c in bb.columns}
+    df["bb_lower"] = bb[bb_cols["BBL"]]
+    df["bb_mid"] = bb[bb_cols["BBM"]]
+    df["bb_upper"] = bb[bb_cols["BBU"]]
 
     df["rsi"] = ta.rsi(close, length=strat["rsi_period"])
     df["ema"] = ta.ema(close, length=strat["ema_period"])
     df["atr"] = ta.atr(high, low, close, length=strat["atr_period"])
-    df["vol_sma"] = vol.rolling(window=20).mean()
+    df["vol_sma"] = vol.rolling(window=strat["bb_period"]).mean()
     df["vol_ratio"] = vol / df["vol_sma"]
 
     df["price_change_1h"] = close.pct_change(periods=1)
