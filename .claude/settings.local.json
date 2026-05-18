@@ -6,7 +6,24 @@
       "Bash(git init *)",
       "Bash(echo \".superpowers/\")",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(pip install *)",
+      "Bash(pip index *)",
+      "Bash(pip search *)",
+      "Bash(python -c \"import importlib.metadata; print\\([d for d in importlib.metadata.distributions\\(\\) if 'pandas' in d.metadata['Name'].lower\\(\\)]\\)\")",
+      "WebSearch",
+      "Bash(pip --version)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(pip download *)",
+      "Bash(python *)",
+      "Bash(pip show *)",
+      "Bash(pip uninstall *)",
+      "Bash(git commit *)",
+      "Bash(git rm *)",
+      "Bash(git *)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(sshpass *)"
     ]
   }
 }
