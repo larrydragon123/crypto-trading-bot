@@ -30,9 +30,12 @@ class DataFeed:
 async def fetch_with_retry(exchange, symbol: str, timeframe: str, limit: int = 300, max_retries: int = 3) -> pd.DataFrame:
     """Fetch OHLCV with exponential backoff retry."""
     delay = 5
+    loop = asyncio.get_running_loop()
     for attempt in range(max_retries):
         try:
-            raw = await asyncio.to_thread(exchange.fetch_ohlcv, symbol, timeframe, limit)
+            raw = await loop.run_in_executor(None, exchange.fetch_ohlcv, symbol, timeframe, limit)
+            if not raw or len(raw) == 0:
+                raise ValueError(f"Empty response from exchange")
             df = pd.DataFrame(raw, columns=["timestamp", "open", "high", "low", "close", "volume"])
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
             df.set_index("timestamp", inplace=True)
