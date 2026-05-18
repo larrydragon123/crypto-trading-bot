@@ -11,8 +11,7 @@ services:
       - TG_CHAT_ID=${TG_CHAT_ID}
       - PAPER_TRADING_ONLY=${PAPER_TRADING_ONLY:-true}
     volumes:
-      - ./trading.db:/app/trading.db
-      - ./logs:/app/logs
+      - ./bot_data:/app/crypto_bot
     logging:
       driver: "json-file"
       options:
