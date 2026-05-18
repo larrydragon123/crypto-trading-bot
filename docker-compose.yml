@@ -12,11 +12,11 @@ services:
       - PAPER_TRADING_ONLY=${PAPER_TRADING_ONLY:-true}
     volumes:
       - bot_data:/app/crypto_bot/data
-
-volumes:
-  bot_data:
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  bot_data:
