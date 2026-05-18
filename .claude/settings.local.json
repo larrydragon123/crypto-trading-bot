@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"C:\\\\Users\\\\drago\\\\Desktop\\\\量化交易\" status)",
+      "Bash(bash *)",
+      "Bash(git init *)",
+      "Bash(echo \".superpowers/\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
