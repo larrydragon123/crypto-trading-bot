@@ -14,7 +14,8 @@ def compute_indicators(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     vol = df["volume"]
 
     bb = ta.bbands(close, length=strat["bb_period"], std=strat["bb_std"])
-    # Extract BB columns by prefix to avoid float/int mismatch in column names
+    if bb is None:
+        raise ValueError(f"BBands returned None — need at least {strat['bb_period']} candles")
     bb_cols = {c.split("_")[0]: c for c in bb.columns}
     df["bb_lower"] = bb[bb_cols["BBL"]]
     df["bb_mid"] = bb[bb_cols["BBM"]]

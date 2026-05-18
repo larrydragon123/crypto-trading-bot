@@ -2,7 +2,7 @@ mode: paper  # paper | live
 
 exchange:
   name: okx
-  testnet: true  # true for paper mode testnet
+  testnet: false  # false = real market data (public data no auth needed)
   api_key: ""
   secret: ""
   password: ""
