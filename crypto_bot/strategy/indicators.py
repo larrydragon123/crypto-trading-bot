@@ -30,3 +30,42 @@ def compute_indicators(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     df["price_change_1h"] = close.pct_change(periods=1)
 
     return df
+
+
+def compute_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
+    """Add ADX columns in-place (Wilder's method)."""
+    high, low, close = df["high"], df["low"], df["close"]
+    prev_close = close.shift(1)
+
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    atr_ = tr.ewm(span=period, adjust=False).mean()
+
+    up = high - high.shift(1)
+    down = low.shift(1) - low
+    plus_dm = pd.Series(0.0, index=df.index)
+    minus_dm = pd.Series(0.0, index=df.index)
+    plus_dm[(up > down) & (up > 0)] = up
+    minus_dm[(down > up) & (down > 0)] = down
+
+    plus_di = 100 * (plus_dm.ewm(span=period, adjust=False).mean() / atr_)
+    minus_di = 100 * (minus_dm.ewm(span=period, adjust=False).mean() / atr_)
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di + 0.0001)
+    adx = dx.ewm(span=period, adjust=False).mean()
+
+    df["adx"] = adx
+    df["plus_di"] = plus_di
+    df["minus_di"] = minus_di
+    return df
+
+
+def is_ranging(df: pd.DataFrame, percentile: int = 40) -> bool:
+    """Check if current ADX is in bottom percentile of recent window."""
+    adx_series = df["adx"].dropna()
+    if len(adx_series) < 50:
+        return True  # not enough data, allow trading
+    current = adx_series.iloc[-1]
+    rank = (adx_series.iloc[-168:] < current).mean() * 100  # % of last week below current
+    return rank < percentile

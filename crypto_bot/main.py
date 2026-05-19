@@ -11,7 +11,7 @@ from crypto_bot.data.storage import (
     update_daily_stats,
 )
 from crypto_bot.data.feed import fetch_with_retry
-from crypto_bot.strategy.indicators import compute_indicators
+from crypto_bot.strategy.indicators import compute_indicators, compute_adx, is_ranging
 from crypto_bot.strategy.signals import check_entry, check_exit
 from crypto_bot.risk.manager import (
     can_open_position, calculate_position_size, check_extreme_volatility,
@@ -60,7 +60,7 @@ async def main():
             exchange.set_sandbox_mode(True)
         exchange.load_markets()
         broker.set_exchange(exchange)
-        logger.info("Using PAPER broker — simulated trading")
+        logger.info("Using PAPER broker — simulated trading (long + short)")
 
     tg = TelegramNotifier(cfg)
 
@@ -90,48 +90,82 @@ async def run_loop(broker, tg, symbols, tf_main, tf_trend, cfg):
         df_4h = await fetch_with_retry(exchange, symbol, tf_trend, limit=300)
         df_1h = compute_indicators(df_1h, cfg)
         df_4h = compute_indicators(df_4h, cfg)
+        df_1h = compute_adx(df_1h)
 
         if isinstance(broker, PaperBroker):
             broker.update_price(symbol, df_1h.iloc[-1]["close"])
 
         if check_extreme_volatility(df_1h, cfg):
-            logger.warning(f"Extreme volatility detected for {symbol}, skipping entries")
+            logger.warning(f"Extreme volatility for {symbol}, skipping")
             continue
 
+        # ------ EXIT CHECKS ------
         for trade in get_open_trades():
             if trade["symbol"] != symbol:
                 continue
+
             exit_signal = check_exit(trade, df_1h, cfg)
             if exit_signal:
                 base = symbol.split("/")[0]
-                coin_balance = broker.get_balance(base)["free"]
-                if coin_balance > 0:
-                    result = broker.market_sell(symbol, coin_balance)
-                    if result.success:
+                side = trade.get("side", "buy")
+
+                if exit_signal.direction == "close_short":
+                    # Close short position
+                    result = broker.close_short(symbol)
+                    if result and result.success:
+                        pnl = (trade["entry_price"] - result.price) * result.quantity
+                        pnl_pct = (trade["entry_price"] / result.price - 1) * 100
                         close_trade(trade["id"], result.price, exit_signal.reason)
-                        t = trade
-                        pnl = (result.price - t["entry_price"]) * result.quantity
-                        pnl_pct = (result.price / t["entry_price"] - 1) * 100
                         record_daily_pnl(pnl)
                         await tg.notify_trade_close(symbol, result.price, pnl, pnl_pct, exit_signal.reason)
                         if exit_signal.reason == "stop_loss":
                             handle_stop_loss(trade["id"], symbol)
-                        logger.info(f"Exit: {symbol} @ {result.price:.2f} reason={exit_signal.reason}")
+                        logger.info(f"Exit short: {symbol} @ {result.price:.2f} PnL={pnl:+.2f} reason={exit_signal.reason}")
 
+                elif exit_signal.direction == "close_long":
+                    # Close long position
+                    coin_balance = broker.get_balance(base)["free"]
+                    if coin_balance > 0:
+                        result = broker.market_sell(symbol, coin_balance)
+                        if result.success:
+                            pnl = (result.price - trade["entry_price"]) * result.quantity
+                            pnl_pct = (result.price / trade["entry_price"] - 1) * 100
+                            close_trade(trade["id"], result.price, exit_signal.reason)
+                            record_daily_pnl(pnl)
+                            await tg.notify_trade_close(symbol, result.price, pnl, pnl_pct, exit_signal.reason)
+                            if exit_signal.reason == "stop_loss":
+                                handle_stop_loss(trade["id"], symbol)
+                            logger.info(f"Exit long: {symbol} @ {result.price:.2f} PnL={pnl:+.2f} reason={exit_signal.reason}")
+
+        # ------ ENTRY CHECKS ------
         bal = broker.get_balance("USDT")
         balance_usdt = bal["total"]
         can_enter, reason = can_open_position(symbol, balance_usdt, cfg)
         if can_enter:
-            signal = check_entry(df_1h, df_4h, symbol, cfg)
-            if signal:
+            signal_ = check_entry(df_1h, symbol, cfg)
+            if signal_:
                 atr = df_1h.iloc[-1]["atr"]
-                size_usdt = calculate_position_size(symbol, balance_usdt, signal.price, atr, cfg)
-                result = broker.market_buy(symbol, size_usdt)
-                if result.success:
-                    trade_id = open_trade(symbol, result.price, result.quantity, "buy")
-                    await tg.notify_trade_open(symbol, result.price, result.quantity, signal.reason)
-                    logger.info(f"Entry: {symbol} @ {result.price:.2f} size={size_usdt:.2f} USDT")
+                size_usdt = calculate_position_size(symbol, balance_usdt, signal_.price, atr, cfg)
 
+                if signal_.direction == "long":
+                    result = broker.market_buy(symbol, size_usdt)
+                    if result.success:
+                        trade_id = open_trade(symbol, result.price, result.quantity, "buy")
+                        await tg.notify_trade_open(symbol, result.price, result.quantity, signal_.reason)
+                        logger.info(f"Entry LONG: {symbol} @ {result.price:.2f} size={size_usdt:.2f} USDT")
+                    else:
+                        logger.warning(f"Long entry failed: {result.error}")
+
+                elif signal_.direction == "short":
+                    result = broker.open_short(symbol, size_usdt)
+                    if result.success:
+                        trade_id = open_trade(symbol, result.price, result.quantity, "sell")
+                        await tg.notify_trade_open(symbol, result.price, result.quantity, signal_.reason)
+                        logger.info(f"Entry SHORT: {symbol} @ {result.price:.2f} size={size_usdt:.2f} USDT")
+                    else:
+                        logger.warning(f"Short entry failed: {result.error}")
+
+    # Record balances
     bal = broker.get_balance("USDT")
     record_balance("USDT", bal["free"], bal["used"])
     for symbol in symbols:

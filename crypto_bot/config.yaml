@@ -19,12 +19,16 @@ strategy:
   bb_std: 2.0
   rsi_period: 14
   rsi_oversold: 35
-  rsi_overbought: 55
+  rsi_overbought: 65
   ema_period: 200
   atr_period: 14
-  atr_stop_multiplier: 2.0
+  # V3: asymmetric stops (long tighter, short wider)
+  sl_long_mult: 2.0
+  sl_short_mult: 3.0
+  # V3: ADX regime filter (bottom percentile of recent ADX)
+  adx_percentile: 40
   volume_ratio_threshold: 1.2
-  max_hold_hours: 72
+  max_hold_hours: 24
 
 risk:
   position_size_min: 0.10
