@@ -1,0 +1,181 @@
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-card: #16213e;
+    --bg-hover: #1c2a4a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888;
+    --accent-green: #00d4aa;
+    --accent-red: #ff4757;
+    --accent-blue: #4da6ff;
+    --accent-orange: #ffaa00;
+    --border: #2a2a4a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+}
+
+.header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header h1 { font-size: 18px; font-weight: 700; }
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+.status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+.status-dot.offline { background: var(--accent-red); }
+
+.container { max-width: 1280px; margin: 0 auto; padding: 20px 24px; }
+
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 16px 20px;
+    border-left: 3px solid transparent;
+}
+
+.stat-card.balance { border-color: var(--accent-green); }
+.stat-card.positions { border-color: var(--accent-blue); }
+.stat-card.pnl { border-color: var(--accent-orange); }
+.stat-card.status { border-color: var(--accent-green); }
+
+.stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+}
+.stat-value .unit {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-left: 4px;
+}
+
+.pnl-positive { color: var(--accent-green); }
+.pnl-negative { color: var(--accent-red); }
+
+.chart-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.chart-panel, .positions-panel {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 16px 20px;
+}
+
+.panel-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.chart-container { position: relative; height: 240px; }
+
+.positions-panel .position-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.positions-panel .position-item:last-child { border-bottom: none; }
+.position-symbol { font-weight: 600; }
+.position-detail { font-size: 13px; color: var(--text-secondary); }
+
+.empty-state { text-align: center; color: var(--text-secondary); padding: 48px 0; font-size: 14px; }
+
+.trades-panel { background: var(--bg-card); border-radius: 10px; padding: 16px 20px; }
+
+.trades-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.trades-table th {
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.trades-table td { padding: 10px 12px; border-bottom: 1px solid rgba(42, 42, 74, 0.5); }
+.trades-table tr:hover { background: var(--bg-hover); }
+
+.trade-buy { color: var(--accent-green); }
+.trade-sell { color: var(--accent-red); }
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 13px;
+}
+
+.pagination button {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.pagination button:hover { background: var(--border); }
+.pagination button:disabled { opacity: 0.3; cursor: default; }
+.pagination span { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+    .stat-cards { grid-template-columns: repeat(2, 1fr); }
+    .chart-row { grid-template-columns: 1fr; }
+}
