@@ -1,30 +1,9 @@
 import asyncio
+import functools
 import logging
 import pandas as pd
 
 logger = logging.getLogger(__name__)
-
-
-class DataFeed:
-    """Fetches OHLCV data from OKX via REST."""
-
-    def __init__(self, exchange):
-        self._exchange = exchange
-        self._cache: dict[str, dict[str, pd.DataFrame]] = {}
-
-    def fetch_ohlcv(self, symbol: str, timeframe: str, limit: int = 300) -> pd.DataFrame:
-        raw = self._exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-        df = pd.DataFrame(raw, columns=["timestamp", "open", "high", "low", "close", "volume"])
-        df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
-        df.set_index("timestamp", inplace=True)
-        return df.astype(float)
-
-    def get_dataframe(self, symbol: str, timeframe: str, limit: int = 300) -> pd.DataFrame:
-        return self.fetch_ohlcv(symbol, timeframe, limit=limit)
-
-    def get_latest_price(self, symbol: str) -> float:
-        ticker = self._exchange.fetch_ticker(symbol)
-        return ticker["last"]
 
 
 async def fetch_with_retry(exchange, symbol: str, timeframe: str, limit: int = 300, max_retries: int = 3) -> pd.DataFrame:
@@ -33,16 +12,23 @@ async def fetch_with_retry(exchange, symbol: str, timeframe: str, limit: int = 3
     loop = asyncio.get_running_loop()
     for attempt in range(max_retries):
         try:
-            raw = await loop.run_in_executor(None, exchange.fetch_ohlcv, symbol, timeframe, limit)
+            fetch_fn = functools.partial(
+                exchange.fetch_ohlcv, symbol, timeframe, limit=limit
+            )
+            raw = await loop.run_in_executor(None, fetch_fn)
             if not raw or len(raw) == 0:
-                raise ValueError(f"Empty response from exchange")
+                raise ValueError(f"Empty response from exchange for {symbol} {timeframe}")
             df = pd.DataFrame(raw, columns=["timestamp", "open", "high", "low", "close", "volume"])
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
             df.set_index("timestamp", inplace=True)
-            return df.astype(float)
+            df = df.astype(float)
+            logger.info(f"Fetched {len(df)} candles for {symbol} {timeframe}")
+            return df
+        except ValueError:
+            raise
         except Exception as e:
-            logger.warning(f"Fetch attempt {attempt + 1} failed: {e}")
+            logger.warning(f"Fetch attempt {attempt + 1}/{max_retries} for {symbol} {timeframe}: {e}")
             if attempt < max_retries - 1:
                 await asyncio.sleep(delay)
                 delay = min(delay * 2, 60)
-    raise RuntimeError(f"Failed to fetch OHLCV after {max_retries} attempts")
+    raise RuntimeError(f"Failed to fetch OHLCV for {symbol} {timeframe} after {max_retries} attempts")
