@@ -18,5 +18,18 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+    container_name: crypto-dashboard
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - bot_data:/app/data
+    depends_on:
+      - bot
+
 volumes:
   bot_data:
